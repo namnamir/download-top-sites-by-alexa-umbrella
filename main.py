@@ -191,11 +191,10 @@ if __name__ == '__main__':
         in_file = 'top-1m.csv'
     else:
         file = 'http://s3.amazonaws.com/alexa-static/top-1m.csv.zip'
-        # call(
-        #     'wget {} -O file.zip; unzip ./file.zip; rm file.zip;'.format(file),
-        #     shell=True)
+        call(
+             'wget {} -O file.zip; unzip ./file.zip; rm file.zip;'.format(file),
+             shell=True)
         in_file = 'top-1m.csv'
-        in_file = 'test.csv'
 
     with open(in_file) as f:
         domains = f.readlines()
