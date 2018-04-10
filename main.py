@@ -4,7 +4,6 @@ from tld import get_tld
 from datetime import datetime
 from time import sleep
 from subprocess import call
-import sys
 import threading
 import argparse
 import random
@@ -21,35 +20,64 @@ start_point = [1, 2, 3, 4, 5]
 out_file = 'cleared_list.csv'
 
 
+def pr_color(FLAG, id, color, text):
+    """
+    make the texts colorful; read more here:
+    https://stackoverflow.com/questions/287871/print-in-terminal-with-colors
+    """
+    if FLAG:
+        # define colors
+        if color == 'L_R':
+            color = '\x1b[0;33;44m'
+        if color == 'P_B':
+            color = '\x1b[0;30;45m'
+        if color == 'R_O':
+            color = '\x1b[1;37;41m'
+        if color == 'G_B':
+            color = '\x1b[7;37;41m'
+        if color == 'G_O':
+            color = '\x1b[1;33;42m'
+        if color == 'G_W':
+            color = '\x1b[6;37;42m'
+        if color == 'N_G':
+            color = '\x1b[7;30;46m'
+        if color == 'N_W':
+            color = '\x1b[7;30;47m'
+        # define restart
+        END = '\x1b[0m'
+        if type(id) == int:
+            print(datetime.now().strftime("%Y-%m-%d %H:%M:%S") + ' - ' + '\x1b[0;30;43m' + ' T' + str(id) + ' ' + END + '\t' + color + text + END)
+        else:
+            print(datetime.now().strftime("%Y-%m-%d %H:%M:%S") + ' -    ' + '\t' + color + text + END)
+
+
 class Website(object):
 
-    def domain_validator(self):
+    def domain_validator(self, FLAG, id):
         try:
             # get the domain name from the list
             return True, get_tld(self, as_object=True, fix_protocol=True)
         except:
-            return False, "Weird_Domain_Name"
+            pr_color(FLAG, id, 'R_O', 'Error_01: "{}" is not a valid domain.'.format(self))
+            return False, self
 
     # checks if the domain is not duplicated (e.g. google.com and google.co.uk)
-    def duplicated_domain_finder(self):
-
+    def duplicated_domain_finder(self, FLAG, id):
         try:
-            dom = Website.domain_validator(self)
+            dom = Website.domain_validator(self, FLAG, id)
             if dom[0] and (dom[1].domain not in pure_domains):
                 pure_domains.append(dom[1].domain)
                 return True
-            else:
+            elif dom[1].domain in pure_domains:
+                pr_color(FLAG, id, 'R_O', 'Error_02: "{}" is duplicated.'.format(self))
                 return False
-
         # in case of unkown tld (e.g. xn--j1ahfl.xn--p1ai)
         except:
-            print("Unexpected error:", sys.exc_info()[0])
-            # raise
+            pr_color(FLAG, id, 'R_O', 'Error_03: error in duplication of "{}"'.format(self))
             pass
 
-    def category_parser(self):
-
-        sleep(random.randint(40, 100))
+    def category_parser(self, FLAG, id):
+        sleep(random.randint(10, 40))
 
         ag1 = """Mozilla/5.0 (iPhone; CPU iPhone OS 10_3_1 like Mac OS X)
             AppleWebKit/603.1.30 (KHTML, like Gecko) Version/10.0
@@ -80,6 +108,8 @@ class Website(object):
             "Connection": "keep-alive"
         }
 
+        pr_color(FLAG, id, 'L_R', 'Getting the category and rank of "{}" from Alexa'.format(self))
+
         #####################
         # Alexa.com
         #####################
@@ -96,7 +126,8 @@ class Website(object):
             site.read(),
             'html.parser')
         # gets part of the data related to global rank
-        temp0 = dumped.find("img", title="Global rank icon").find("strong")
+        temp0 = dumped.find(
+            "img", title="Global rank icon").find("strong")
         rank = temp0.contents[2][1:-14].replace(',', '')
 
         try:
@@ -107,16 +138,17 @@ class Website(object):
 
             # if the category part is not empty and is not an adult website
             if temp1 and (category != "Adult"):
+                pr_color(FLAG, id, 'G_W', 'Data of "{}" are retrived from Alexa'.format(self))
                 # returns the category and rank
                 return True, category, rank
         # if the domain doesn't exist in the database
         except:
             rank = temp0.contents[2][1:-14].replace(',', '')
-
             category = "NA"
+            pr_color(FLAG, id, 'R_O', 'Error_5: the category of "{}" is unknown'.format(self))
             return False, category, rank
 
-    def download_site(self):
+    def download_site(self, FLAG, id):
         """
         downloads the site using wget command (on Linux); for learning
         more about the parameters visit
@@ -130,30 +162,30 @@ class Website(object):
         --max-redirect: sets the max of redirection of the url
         --timeout: set the timeout of the network
         """
-        com = """wget --progress=bar --recursive --accept "*.html, *.htm, *.css, *.js" --no-cache --convert-links --max-redirect=3 --timeout=3 --server-response """ + self
-        call(com, shell=True)
+        try:
+            com = """wget --progress=bar --recursive --accept "*.html, *.htm, *.css, *.js" --no-cache --convert-links --max-redirect=3 --timeout=3 --server-response """ + self
+            pr_color(FLAG, id, 'G_O', '"{}" is preparing for download'.format(self))
+            call(com, shell=True)
+        except:
+            pr_color(FLAG, id, 'R_O', 'ERROR_04: error in downloading "{}"'.format(self))
 
 
-def worker(domains_list, output_file, start_point, id):
-    start = min(start_point)
-    for i in range(start-1, len(domains_list)):
-        url = str(Website.domain_validator(domains_list[i])[1])
-        dup = Website.duplicated_domain_finder(url)
-        if (url not in worked_urls) and dup:
-            # add the url to the list to prevent duplication work of processes
-            worked_urls.append(url)
-            # prints (url, category, rank, date) into the file
+def worker(FLAG, domains_list, output_file, start_point, id):
+    start = start_point[id]
+    for i in range(start-1, len(domains_list), 5):
+        #url = str(Website.domain_validator(domains_list[i], FLAG, id)[1])
+        url = domains_list[i]
+        pr_color(FLAG, int(id), 'P_B', 'Working on "{}", ({}/{})'.format(url, i+1, len(domains_list)))
+        dup = Website.duplicated_domain_finder(url, FLAG, id)
+        if dup:
+            # prints (url, category, rank, date) into the output file
             with open(output_file, 'a') as out:
-                out.write(url + ',' + Website.category_parser(url)[0] + ',' + Website.category_parser(url)[1] + ',' + datetime.now().strftime("%Y-%m-%d") + '\n')
-            Website.download_site(url)
+                out.write(url + ',' + Website.category_parser(url, FLAG, id)[1] + ',' + Website.category_parser(url, FLAG, id)[2] + ',' + datetime.now().strftime("%Y-%m-%d") + '\n')
+
+            Website.download_site(url, FLAG, id)
             # prints on the screen
-            print(
-                datetime.now().strftime("%Y-%m-%d %H:%M:%S"), url,
-                " in category ", Website.category_parser(url)[0],
-                " at rank ", Website.category_parser(url)[1],
-                " is downloaded.")
-    # updates the list to prevent
-    start_point[id] = start + 1
+            text = url + " in category " + Website.category_parser(url, FLAG, id)[1] + " at rank " + Website.category_parser(url, FLAG, id)[2] + " is downloaded."
+            pr_color(FLAG, id, 'G_B', text)
 
 
 if __name__ == '__main__':
@@ -164,13 +196,19 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-a", "--alexa", help="Get list of the domains from Alexa",
-        action="store_true")
+        action="store_true", default=False)
     parser.add_argument(
         "-c", "--cisco", help="Get list of the domains from Cisco",
-        action="store_true")
+        action="store_true", default=False)
     parser.add_argument(
         "-s", "--statvoo", help="Get list of the domains from Statvoo",
-        action="store_true")
+        action="store_true", default=False)
+    parser.add_argument(
+        "-F", "--file", help="Go for the custom file e.g. /path/to/top.csv",
+        action="store_true", default=True)
+    parser.add_argument(
+        "-S", "--show", help="Show the log",
+        action="store_true", default=True)
     args = parser.parse_args()
 
     """
@@ -180,21 +218,31 @@ if __name__ == '__main__':
     if args.statvoo:
         file = 'https://siteinfo.statvoo.com/dl/top-1million-sites.csv.zip'
         call(
-            'wget {} -O file.zip; unzip ./file.zip; rm file.zip;'.format(file),
+            'wget {} -O file.zip; unzip ./file.zip; rm file.zip;'.format(
+                file),
             shell=True)
         in_file = 'top-1million-sites.csv'
     elif args.cisco:
         file = 'http://s3-us-west-1.amazonaws.com/umbrella-static/top-1m.csv.zip'
         call(
-            'wget {} -O file.zip; unzip ./file.zip; rm file.zip;'.format(file),
+            'wget {} -O file.zip; unzip ./file.zip; rm file.zip;'.format(
+                file),
+            shell=True)
+        in_file = 'top-1m.csv'
+    elif args.alexa:
+        file = 'http://s3.amazonaws.com/alexa-static/top-1m.csv.zip'
+        call(
+            'wget {} -O file.zip; unzip ./file.zip; rm file.zip;'.format(
+                file),
             shell=True)
         in_file = 'top-1m.csv'
     else:
-        file = 'http://s3.amazonaws.com/alexa-static/top-1m.csv.zip'
-        call(
-             'wget {} -O file.zip; unzip ./file.zip; rm file.zip;'.format(file),
-             shell=True)
-        in_file = 'top-1m.csv'
+        in_file = 'top.csv'
+    # checks if the the user wants to see the output or not
+    if args.show:
+        FLAG = True
+    else:
+        FLAG = False
 
     with open(in_file) as f:
         domains = f.readlines()
@@ -203,16 +251,19 @@ if __name__ == '__main__':
         the line (e.g. '999970,sflowm.com\n') and make a list
         """
         domains = [line.split(',')[-1][:-1] for line in domains]
+        pr_color(FLAG, 'F', 'N_W', 'The list of the domains is obtained.')
 
     # writes the header of the file
     with open(out_file, 'w') as output:
         output.write("URL,Category,Rank,Date\n")
+        pr_color(FLAG, 'F', 'N_W', 'The output file is created.')
 
     threads = []
     for i in range(5):
+        pr_color(FLAG, i, 'N_G', 'Thread is initiating.')
         thread = threading.Thread(
             target=worker,
-            args=(domains, out_file, start_point, i,))
+            args=(FLAG, domains, out_file, start_point, i,))
         threads.append(thread)
-        sleep(15)
         thread.start()
+        sleep(5)
