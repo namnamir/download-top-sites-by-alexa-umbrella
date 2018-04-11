@@ -205,10 +205,11 @@ if __name__ == '__main__':
         action="store_true", default=False)
     parser.add_argument(
         "-F", "--file", help="Go for the custom file e.g. /path/to/top.csv",
-        action="store_true", default=True)
+        nargs='?', type=str, default="top.csv")
+    # read more here: https://stackoverflow.com/a/15301183
     parser.add_argument(
         "-S", "--show", help="Show the log",
-        action="store_true", default=True)
+        nargs='?', const=1, type=int, default=1)
     args = parser.parse_args()
 
     """
@@ -236,6 +237,8 @@ if __name__ == '__main__':
                 file),
             shell=True)
         in_file = 'top-1m.csv'
+    elif args.file:
+        in_file = args.file
     else:
         in_file = 'top.csv'
     # checks if the the user wants to see the output or not
