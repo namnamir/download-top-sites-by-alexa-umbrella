@@ -54,6 +54,9 @@ def pr_color(FLAG, id, color, text):
 class Website(object):
 
     def domain_validator(self, FLAG, id):
+        """
+        this function validates the url if the tld is valid or not.
+        """
         try:
             # get the domain name from the list
             return True, get_tld(self, as_object=True, fix_protocol=True)
@@ -63,6 +66,10 @@ class Website(object):
 
     # checks if the domain is not duplicated (e.g. google.com and google.co.uk)
     def duplicated_domain_finder(self, FLAG, id):
+        """
+        it checks if the domain, regardless the tld, is checked previously
+        or not.
+        """
         try:
             dom = Website.domain_validator(self, FLAG, id)
             if dom[0] and (dom[1].domain not in pure_domains):
@@ -77,6 +84,11 @@ class Website(object):
             pass
 
     def category_parser(self, FLAG, id):
+        """
+        it parses the category of the domain as well as the Alexa rank of
+        it from Alexa website. The random sleep and user-agent of browser
+        are for assuring the Alexa that it is not an attack to its service.
+        """
         sleep(random.randint(10, 40))
 
         ag1 = """Mozilla/5.0 (iPhone; CPU iPhone OS 10_3_1 like Mac OS X)
@@ -153,17 +165,32 @@ class Website(object):
         downloads the site using wget command (on Linux); for learning
         more about the parameters visit
         https://www.gnu.org/software/wget/manual/wget.html:
-        --progress: show the progress bar/dot
         --server-response: shows the HTTP header sent by server
         --recursive: recursively download all files and folders
         --accept: download only specific file types
         --convert-links: convert (internal) links after downloading
-        --no-cache: don't get the cached pages
         --max-redirect: sets the max of redirection of the url
         --timeout: set the timeout of the network
+        --no-parent: don't follow links outside the directory
+        --no-clobber: don't overwrite any existing files
+        --html-extension: save files with the .html extension
+        --span-hosts: (read more: https://stackoverflow.com/a/10872187)
         """
         try:
-            com = """wget --progress=bar --recursive --accept "*.html, *.htm, *.css, *.js" --no-cache --convert-links --max-redirect=3 --timeout=3 --server-response """ + self
+            com = """
+                wget \
+                --recursive \
+                --no-clobber \
+                --accept "*.html, *.htm, *.css, *.js" \
+                --html-extension \
+                --convert-links \
+                --max-redirect=3 \
+                --timeout=3 \
+                --server-response \
+                --domains {} \
+                --no-parent \
+                --span-hosts \
+                {}""".format(self, self)
             pr_color(FLAG, id, 'G_O', '"{}" is preparing for download'.format(self))
             call(com, shell=True)
         except:
@@ -171,9 +198,12 @@ class Website(object):
 
 
 def worker(FLAG, domains_list, output_file, start_point, id):
+    """
+    it gives tasks to each thread.
+    """
     start = start_point[id]
     for i in range(start-1, len(domains_list), 5):
-        #url = str(Website.domain_validator(domains_list[i], FLAG, id)[1])
+        # url = str(Website.domain_validator(domains_list[i], FLAG, id)[1])
         url = domains_list[i]
         pr_color(FLAG, int(id), 'P_B', 'Working on "{}", ({}/{})'.format(url, i+1, len(domains_list)))
         dup = Website.duplicated_domain_finder(url, FLAG, id)
@@ -194,6 +224,7 @@ if __name__ == '__main__':
     downloading the latest top opne million sites.
     """
     parser = argparse.ArgumentParser()
+
     parser.add_argument(
         "-a", "--alexa", help="Get list of the domains from Alexa",
         action="store_true", default=False)
@@ -210,6 +241,7 @@ if __name__ == '__main__':
     parser.add_argument(
         "-S", "--show", help="Show the log",
         nargs='?', const=1, type=int, default=1)
+
     args = parser.parse_args()
 
     """
