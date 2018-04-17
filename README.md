@@ -19,4 +19,3 @@ This piece of code downloads the list of the top 1M Alexa or Umbrella websites a
 | "-s", "--statvoo" | Get list of the domains from [Statvoo](https://siteinfo.statvoo.com/top/sites) and unzip it. It is the alternative Alexa list in case of any issue with Alexa website. |
 | "-F", "--file" | Path to the file containing the list of domains and ranksin format xxx,yyy for each row (e.g. 1,google.com); default is *top.csv* in the root folder |
 | "-S", "--show" | Turn on/off the showing output on the screen; it needs to be like  `python3 main.py --show 0` which means "don't show the activities"|
-
