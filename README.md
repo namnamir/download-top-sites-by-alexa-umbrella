@@ -3,7 +3,7 @@ This piece of code downloads the list of the top 1M Alexa or Umbrella websites a
 
 ## How to use
 
-* Run this code on a Linux distro.
+* Run this code on a (Debian-based) Linux distro.
 
 * *unzip* package needs to be installed.
 
