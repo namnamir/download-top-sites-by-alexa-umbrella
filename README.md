@@ -1,5 +1,11 @@
-# Download Top 1 Million Alexa Sites
+# Download Top Sites from Different Sources
 This piece of code downloads the list of the top 1M Alexa or Umbrella websites and download them on the local machine.
+- Alexa: http://s3.amazonaws.com/alexa-static/top-1m.csv.zip
+- Cisco: http://s3-us-west-1.amazonaws.com/umbrella-static/index.html
+- Majestic: https://majestic.com/reports/majestic-million
+- Moz: https://moz.com/top-500/download/?table=top500Domains
+- Tranco: https://tranco-list.eu/latest_list
+- DomCop: https://www.domcop.com/top-10-million-websites
 
 ## How to use
 
